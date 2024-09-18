@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IV Smart Pump</title>
+    <style>
+        /* Basic styling */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: grid;
+            grid-template-areas: 
+                "display controls"
+                "keypad controls"
+                "monitor controls";
+            grid-template-columns: 2fr 1fr;
+            grid-template-rows: 1fr auto auto;
+            gap: 10px;
+            width: 600px;
+            height: 500px;
+            background-color: #ffffff;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+        }
+        .display {
+            grid-area: display;
+            background-color: #222;
+            padding: 10px;
+            border: 2px solid #666;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 150px;
+            color: #00ff00;
+            position: relative;
+            box-shadow: inset 0 0 10px rgba(0,255,0,0.7);
+        }
+        .display-content {
+            font-size: 32px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0,255,0,0.8);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-align: left;
+            width: 100%;
+            padding-left: 10px;
+        }
+        .units {
+            font-size: 14px;
+            text-shadow: 0 0 6px rgba(0,255,0,0.8);
+            text-align: left;
+            width: 100%;
+            padding-left: 10px;
+        }
+        .monitor {
+            grid-area: monitor;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+        }
+        .flowrate, .volume {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .alerts {
+            background-color: #ffcccc;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            width: 100%;
+            text-align: center;
+        }
+        .keypad {
+            grid-area: keypad;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 5px;
+            background-color: #ffffff;
+            padding: 10px;
+        }
+        .keypad button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.3s, transform 0.1s;
+        }
+        .keypad button.orange {
+            background-color: #ffa500;
+        }
+        .keypad button:hover {
+            background-color: #0056b3;
+        }
+        .keypad button:active {
+            background-color: #003d7a;
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .keypad button:focus {
+            outline: none;
+        }
+        .controls {
+            grid-area: controls;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            background-color: #ffffff;
+            border-left: 2px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .rate-display {
+            font-size: 18px;
+            font-weight: bold;
+            height: 40px;
+            border: 2px solid #ddd;
+            padding: 5px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .button {
+            padding: 8px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .button:focus {
+            outline: none;
+        }
+        .popup, .channel-popup {
+            display: none;
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -20%);
+            background-color: #ffffff;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.3);
+            padding: 20px;
+            width: 300px;
+            z-index: 1000;
+        }
+        .popup.active, .channel-popup.active {
+            display: block;
+        }
+        .popup-content, .channel-popup-content {
+            font-size: 16px;
+            line-height: 1.5;
+        }
+        .popup-close, .channel-popup-close {
+            display: block;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .popup-close:hover, .channel-popup-close:hover {
+            background-color: #0056b3;
+        }
+        .medication-select, .rate-container {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .rate-container ul {
+            list-style: none;
+            padding: 0;
+        }
+        .rate-container li {
+            padding: 5px;
+            cursor: pointer;
+        }
+        .rate-container li:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="display">
+            <div class="display-content" id="display-content">A: </div>
+            <div class="display-content" id="display-content">B:
+            </div>
+            <div class="units" id="units">VTBI = ml/hr</div>
+        </div>
+        <div class="controls">
+            <div class="rate-display" id="rate-display">Rate: </div>
+            <div class="button-container">
+                <button class="button" onclick="pause()">Pause</button>
+                <button class="button" onclick="channelOff()">Channel Off</button>
+                <button class="button" onclick="restart()">Restart</button>
+                <button class="button" onclick="toggleChannelPopup()">Channel Select</button>
+            </div>
+            <div class="alerts" id="alerts">Alerts: No Alerts</div>
+        </div>
+        <div class="keypad">
+            <button data-key="7">7</button>
+            <button data-key="8">8</button>
+            <button data-key="9">9</button>
+            <button data-key="4">4</button>
+            <button data-key="5">5</button>
+            <button data-key="6">6</button>
+            <button data-key="1">1</button>
+            <button data-key="2">2</button>
+            <button data-key="3">3</button>
+            <button data-key="0">0</button>
+            <button data-key="clear" class="orange">Clear</button>
+        </div>
+        <div class="monitor">
+            <div class="flowrate" id="flowrate">Flow Rate: </div>
+            <div class="volume" id="volume">Volume to Infuse: </div>
+        </div>
+    </div>
+
+    <div class="popup" id="med-popup">
+        <div class="popup-content">
+            <h2>Medication Database</h2>
+            <label for="medication-select">Select Medication:</label>
+            <select class="medication-select" id="medication-select">
+                <option value="">--Select a Medication--</option>
+                <!-- Medication options here -->
+            </select>
+
+            <div class="rate-container" id="rate-container" style="display: none;">
+                <h2>Common Infusion Rates</h2>
+                <ul id="rate-list">
+                    <!-- Infusion rates will be populated here -->
+                </ul>
+            </div>
+            <button class="popup-close" onclick="togglePopup()">Close</button>
+        </div>
+    </div>
+
+    <div class="channel-popup" id="channel-popup">
+        <div class="channel-popup-content">
+            <h2>Select Channel</h2>
+            <button class="button" onclick="selectChannel('A')">Channel A</button>
+            <button class="button" onclick="selectChannel('B')">Channel B</button>
+            <button class="button" onclick="selectChannel('C')">Channel C</button>
+            <button class="channel-popup-close" onclick="toggleChannelPopup()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const displayContent = document.getElementById('display-content');
+        const rateDisplay = document.getElementById('rate-display');
+        const flowrateElem = document.getElementById('flowrate');
+        const volumeElem = document.getElementById('volume');
+        const alertsElem = document.getElementById('alerts');
+        const keypadButtons = document.querySelectorAll('.keypad button');
+        const medPopup = document.getElementById('med-popup');
+        const channelPopup = document.getElementById('channel-popup');
+        const medicationSelect = document.getElementById('medication-select');
+        const rateContainer = document.getElementById('rate-container');
+        const rateList = document.getElementById('rate-list');
+
+        let rate = '';
+        let selectedChannel = '';
+        let selectedMedication = '';
+        const medicationRates = {
+            "normal-saline": ["100 ml/hr", "150 ml/hr", "200 ml/hr"],
+            "lactated-ringers": ["100 ml/hr", "150 ml/hr", "200 ml/hr"],
+            "d5w": ["50 ml/hr", "100 ml/hr", "150 ml/hr"],
+            "d5ns": ["75 ml/hr", "125 ml/hr", "200 ml/hr"],
+            "potassium-chloride": ["10 ml/hr", "20 ml/hr", "30 ml/hr"],
+            "magnesium-sulfate": ["5 ml/hr", "10 ml/hr", "15 ml/hr"],
+            "calcium-chloride": ["10 ml/hr", "20 ml/hr", "30 ml/hr"],
+            "atropine": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "epinephrine": ["0.5 ml/hr", "1 ml/hr", "2 ml/hr"],
+            "norepinephrine": ["0.5 ml/hr", "1 ml/hr", "1.5 ml/hr"],
+            "dopamine": ["2 ml/hr", "5 ml/hr", "10 ml/hr"],
+            "dobutamine": ["2 ml/hr", "5 ml/hr", "10 ml/hr"],
+            "vasopressin": ["0.5 ml/hr", "1 ml/hr", "2 ml/hr"],
+            "sodium-bicarbonate": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "furosemide": ["10 ml/hr", "20 ml/hr", "30 ml/hr"],
+            "hydrochlorothiazide": ["10 ml/hr", "15 ml/hr", "20 ml/hr"],
+            "heparin": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "enoxaparin": ["0.5 ml/hr", "1 ml/hr", "2 ml/hr"],
+            "vancomycin": ["50 ml/hr", "100 ml/hr", "150 ml/hr"],
+            "ceftriaxone": ["50 ml/hr", "100 ml/hr", "150 ml/hr"],
+            "meropenem": ["50 ml/hr", "100 ml/hr", "150 ml/hr"],
+            "amiodarone": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "lidocaine": ["2 ml/hr", "5 ml/hr", "10 ml/hr"],
+            "magnesium-sulfate": ["5 ml/hr", "10 ml/hr", "15 ml/hr"],
+            "levophed": ["0.5 ml/hr", "1 ml/hr", "2 ml/hr"],
+            "propofol": ["20 ml/hr", "50 ml/hr", "100 ml/hr"],
+            "midazolam": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "acetaminophen": ["100 ml/hr", "200 ml/hr", "300 ml/hr"],
+            "hydrocodone": ["2 ml/hr", "5 ml/hr", "10 ml/hr"],
+            "morphine": ["1 ml/hr", "2 ml/hr", "5 ml/hr"],
+            "phenytoin": ["10 ml/hr", "20 ml/hr", "30 ml/hr"],
+            "diazepam": ["1 ml/hr", "2 ml/hr", "3 ml/hr"],
+            "ketorolac": ["10 ml/hr", "20 ml/hr", "30 ml/hr"]
+        };
+
+        function populateMedicationOptions() {
+            const medications = Object.keys(medicationRates);
+            medicationSelect.innerHTML = '<option value="">--Select a Medication--</option>';
+            medications.forEach(medication => {
+                const option = document.createElement('option');
+                option.value = medication;
+                option.textContent = capitalize(medication.replace(/-/g, ' '));
+                medicationSelect.appendChild(option);
+            });
+        }
+
+        function capitalize(text) {
+            return text.charAt(0).toUpperCase() + text.slice(1);
+        }
+
+        function updateDisplay() {
+            displayContent.textContent = `${selectedChannel ? selectedChannel + ': ' : ''}${selectedMedication ? selectedMedication : ''} ${rate || ''}`;
+            rateDisplay.textContent = `Rate: ${rate || ''}`;
+            flowrateElem.textContent = `Flow Rate: ${rate || ''}`;
+            const volume = calculateVolume(rate || 0);
+            volumeElem.textContent = `Volume to Infuse: ${volume} ml`;
+        }
+
+        function calculateVolume(rate) {
+            if (rate && !isNaN(rate)) {
+                return (parseFloat(rate) * 1).toFixed(2); // Assuming infusion duration is 1 hour
+            }
+            return '0.00';
+        }
+
+        function togglePopup() {
+            medPopup.classList.toggle('active');
+            if (medPopup.classList.contains('active')) {
+                populateMedicationOptions();
+                rateContainer.style.display = 'none'; // Hide rates initially
+            }
+        }
+
+        function toggleChannelPopup() {
+            channelPopup.classList.toggle('active');
+        }
+
+        function selectChannel(channel) {
+            selectedChannel = channel;
+            toggleChannelPopup(); // Close channel popup
+            togglePopup(); // Open medication popup
+        }
+
+        function selectMedication(medication) {
+            selectedMedication = medication;
+            const rates = medicationRates[medication] || [];
+            rateList.innerHTML = '';
+            rates.forEach(rate => {
+                const li = document.createElement('li');
+                li.textContent = rate;
+                li.addEventListener('click', () => {
+                    selectRate(rate);
+                });
+                rateList.appendChild(li);
+            });
+            rateContainer.style.display = 'block'; // Show rates
+        }
+
+        function selectRate(selectedRate) {
+            rate = selectedRate;
+            updateDisplay();
+            togglePopup(); // Close medication popup
+        }
+
+        function channelOff() {
+            selectedChannel = '';
+            selectedMedication = '';
+            rate = '';
+            updateDisplay();
+            alertsElem.textContent = 'Alerts: Channel turned off';
+        }
+
+        function pause() {
+            alertsElem.textContent = 'Alerts: Pump paused';
+        }
+
+        function restart() {
+            alertsElem.textContent = 'Alerts: Pump restarted';
+        }
+
+        medicationSelect.addEventListener('change', (e) => {
+            selectMedication(e.target.value);
+        });
+
+        keypadButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const key = button.getAttribute('data-key');
+                if (key === 'clear') {
+                    rate = '';
+                } else {
+                    rate += key;
+                }
+                updateDisplay();
+            });
+        });
+
+        // Initialize display and populate medication options
+        populateMedicationOptions();
+        updateDisplay();
+    </script>
+</body>
+</html>
